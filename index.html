@@ -1,0 +1,175 @@
+
+<!DOCTYPE HTML>
+<html lang="fr">
+  <head>
+  <meta charset="utf-8">
+  <title>noise for bars</title>
+<style type="text/css">
+body {
+  font-family: Arial, Helvetica, "Liberation Sans", FreeSans, sans-serif;
+  background-color: #000;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  overflow: hidden;
+}
+</style>
+  </head>
+  <body>
+<script type="text/javascript">
+
+"use strict";
+window.addEventListener("load",function() {
+
+const DISTBARS = 35;
+const thick = 5;
+
+  let movx, movy;
+
+  let nbBarsX, nbBarsY;
+  let maxx, maxy;
+  let mnoise1 = MNoise(Math.random());
+  let mnoise3 = MNoise('bc');
+  let mnoisehue = MNoise('x');
+  let mnoiselum = MNoise('y');
+
+  let bv;
+  let bh;
+
+// dimensions of canvas
+  maxx = window.innerWidth;
+  maxy = window.innerHeight;
+
+/* vertical bars */
+
+  nbBarsX = Math.ceil(maxx / DISTBARS);
+  movx = DISTBARS * 1.5;
+  let orgx = (maxx - (nbBarsX - 1) * DISTBARS - thick) / 2;
+
+  bv = [];
+  for (let kx = 0; kx < nbBarsX; ++ kx) {
+    let bar = document.createElement('div');
+    let bs = bar.style;
+    bs.position = 'absolute';
+    bs.width = thick + 'px';
+    bs.height = maxy + 'px';
+    bs.top = '0px'
+    bs.left = (orgx + kx * DISTBARS) + 'px';
+    bs.backgroundColor = '#CDF';
+    document.body.appendChild(bar);
+    bv.push ({bar : bar, kx: kx, left0: orgx + kx * DISTBARS});
+  } // for kx;
+
+/* horizontal bars */
+
+  nbBarsY = Math.ceil(maxy / DISTBARS);
+  movy = DISTBARS * 1.5;
+  let orgy = (maxy - (nbBarsY - 1) * DISTBARS - thick) / 2;
+  bh = [];
+  for (let ky = 0; ky < nbBarsY; ++ ky) {
+    let bar = document.createElement('div');
+    let bs = bar.style;
+    bs.position = 'absolute';
+    bs.width = (maxx ) + 'px';
+    bs.height = thick + 'px';
+    bs.top = (orgy + ky * DISTBARS) + 'px';
+    bs.left = 0 + 'px'
+    bs.backgroundColor = '#FDC';
+    document.body.appendChild(bar);
+    bh.push ({bar : bar, ky: ky, top0: orgy + ky * DISTBARS});
+  } // for kx;
+
+  let time = 0;
+  window.requestAnimationFrame(animate);
+
+function animate() {
+  let t, x
+  window.requestAnimationFrame(animate);
+  bv.forEach((bbar, k) => {
+    x = noiseam(time / 30 + bbar.kx / 20);
+    bbar.bar.style.left = bbar.left0 + movx * x + 'px';
+    bbar.bar.style.backgroundColor = noiseColor(time / 60 + bbar.kx / 20);
+  }); // bv.forEach
+  bh.forEach((bbar, k) => {
+    x = noiseam(time / 32 + bbar.ky / 20);
+    bbar.bar.style.top = bbar.top0 + movy * x + 'px';
+    bbar.bar.style.backgroundColor = noiseColor(time / 62 + bbar.ky / 20);
+  }); // bv.forEach
+
+  time ++;
+} // animate()
+
+//-----------------------------------------------------------------------------
+  function noiseam(x) {
+    /* noise in a -0.5 … +0.5 range */
+    return (mnoise1(x) + mnoise3(3 * x ) / 3) * 0.75 - 0.5 ;
+  } // noiseam
+
+//-----------------------------------------------------------------------------
+  function noiseColor(x) {
+    /* returns color with hue in range noise in a -0.5 … +0.5 range */
+    return `hsl(${160 + 80 * mnoisehue(x)},100%, ${40 + 40 * mnoiselum(x)}%)`;
+  } // noiseam
+
+}); // window load listener
+
+/*	============================================================================
+	This is based upon Johannes Baagoe's carefully designed and efficient hash
+	function for use with JavaScript.  It has a proven "avalanche" effect such
+	that every bit of the input affects every bit of the output 50% of the time,
+	which is good.	See: http://baagoe.com/en/RandomMusings/hash/avalanche.xhtml
+
+Modified by Dillon to create a function that always returns the same value for
+the same argument.
+
+MNoise returns a reproductible noise generator. Si the optional parameter seed 
+is provided, it may be any type (used with toString()); the returned generator
+depends on this parameter
+
+The returned generator takes one mandatory numeric parameter, and returns a value
+in the 0..1 range
+	============================================================================
+*/
+function MNoise(seed) { // returns a noise generator
+
+let pe0memo, pe1, y0, y1;
+let n;
+let n0 = 0xefc8249d;
+
+function mash(data) {
+    n = n0;
+		data = data.toString();
+		for (var i = 0; i < data.length; i++) {
+			n += data.charCodeAt(i);
+			var h = 0.02519603282416938 * n;
+			n = h >>> 0;
+			h -= n;
+			h *= n;
+			n = h >>> 0;
+			h -= n;
+			n += h * 0x100000000; // 2^32
+		}
+		return (n >>> 0) * 2.3283064365386963e-10; // 2^-32
+
+	}; // mash
+
+if (seed) n0 = mash(seed);
+
+return function (data) {
+  let pe0 = Math.floor(data);
+  if (pe0 !== pe0memo) { // to save some computations
+    pe0memo = pe0;
+    pe1 = pe0 + 1;
+    y0 = mash (pe0 + 0.017584);
+    y1 = mash (pe1 + 0.017584);
+  }
+  let pf = data - pe0; // fractionnal part
+  let z = pf * pf * (3 - 2 * pf); // smooting
+  return y0 *(1 - z) + y1 * z; // 0..1
+} // return
+} // MNoise
+
+</script>
+
+  </body>
+</html>
